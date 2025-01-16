@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "${NGINX_PORT:-6080}:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/.htpasswd:/etc/nginx/.htpasswd
+    depends_on:
+      - backend
+      - frontend
+    restart: always
+  backend:
+    build: ./backend
+    command: bash /pyspur/entrypoint.sh
+    volumes:
+      - ./backend:/pyspur
+      - ./.env:/pyspur/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+  frontend:
+    build: ./frontend
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - FRONTEND_PORT=${FRONTEND_PORT:-3000}
+      - FRONTEND_HOST=${FRONTEND_HOST:-0.0.0.0}
+    depends_on:
+      - backend
+    restart: always
+volumes:
+  node_modules:
